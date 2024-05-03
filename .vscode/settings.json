@@ -1,0 +1,17 @@
+{
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "event-link-event-link.d.aivencloud.com",
+            "port": 26231,
+            "driver": "MySQL",
+            "name": "EVENT-LINK",
+            "database": "event_link",
+            "username": "avnadmin"
+        }
+    ]
+}

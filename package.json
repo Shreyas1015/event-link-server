@@ -23,6 +23,7 @@
     "imagekit": "^4.1.3",
     "jsonwebtoken": "^9.0.2",
     "mysql": "^2.18.1",
+    "mysql2": "^3.9.7",
     "nodemailer": "^6.9.5"
   },
   "devDependencies": {
