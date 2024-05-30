@@ -1,11 +1,13 @@
-//  "https://event-link.vercel.app"
+const allowedOrigins = ["https://event-link.vercel.app"];
 
-const cors = require("cors");
-
-const corsOptions = cors({
-  origin: process.env.CORS_ORIGIN,
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  credentials: true,
-});
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (allowedOrigins.includes(origin) || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+};
 
 module.exports = corsOptions;

@@ -10,7 +10,7 @@ const app = express();
 
 // MiddleWares
 app.use(express.json());
-app.use(corsOptions);
+app.use(cors(corsOptions));
 app.use(cookieParser());
 
 //Routes
