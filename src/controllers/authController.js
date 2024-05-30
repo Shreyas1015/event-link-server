@@ -12,6 +12,8 @@ const secretKey = process.env.DB_SECRET_KEY || generateSecretKey();
 // Login Form
 const login = asyncHand((req, res) => {
   const { email, password } = req.body;
+  console.log("Login attempt:", { email }); // Log the email attempting to login
+
   const searchQuery = "SELECT * from users where email = ?";
   try {
     connection.query(searchQuery, [email], async (err, results) => {
@@ -20,10 +22,12 @@ const login = asyncHand((req, res) => {
         return res.status(500).json({ error: "Internal Server Error" });
       }
       if (results.length === 0) {
+        console.log("No user found with email:", email); // Log if no user is found
         return res.status(401).json({ message: "Invalid credentials" });
       } else {
         const user = results[0];
         const isPasswordValid = await bcrypt.compare(password, user.password);
+        console.log("Password validation result:", isPasswordValid); // Log password validation result
 
         if (!isPasswordValid) {
           return res.status(401).json({ error: "Invalid Credentials" });
@@ -36,19 +40,21 @@ const login = asyncHand((req, res) => {
         const token = jwt.sign({ email }, secretKey, { expiresIn: "10h" });
         const refreshToken = generateRefreshToken(email);
 
-        console.log("Generated Token:", token);
-        console.log("Refresh Token:", refreshToken);
+        console.log("Generated Token:", token); // Log the generated token
+        console.log("Refresh Token:", refreshToken); // Log the refresh token
 
         res.cookie("token", token, {
           httpOnly: true,
-          secure: true, // set to true if using https
-          sameSite: "strict",
+          secure: true,
+          sameSite: "None",
         });
         res.cookie("refreshToken", refreshToken, {
           httpOnly: true,
-          secure: true, // set to true if using https
-          sameSite: "strict", // adjust according to your requirement
+          secure: true,
+          sameSite: "None",
         });
+
+        console.log("Cookies set for:", email); // Confirm cookies are set
 
         res.status(200).json({
           message: "Logged in successfully",
