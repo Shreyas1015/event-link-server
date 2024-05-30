@@ -4,6 +4,8 @@ const { connection } = require("../config/dbConfig");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const generateSecretKey = require("../utils/generateSecretKey");
+const generateRefreshToken = require("../utils/generateRefreshToken");
+const { verifyRefreshToken } = require("../middlewares/authMiddleware");
 
 const secretKey = process.env.DB_SECRET_KEY || generateSecretKey();
 
@@ -31,25 +33,85 @@ const login = asyncHand((req, res) => {
         const email = user.email;
         const user_type = user.user_type;
 
-        const token = jwt.sign(
-          {
-            email: email,
-          },
-          secretKey,
-          { expiresIn: "1h" }
-        );
+        const token = jwt.sign({ email }, secretKey, { expiresIn: "10h" });
+        const refreshToken = generateRefreshToken(email);
+
+        console.log("Generated Token:", token);
+        console.log("Refresh Token:", refreshToken);
+
+        res.cookie("token", token, { httpOnly: true });
+        res.cookie("refreshToken", refreshToken, { httpOnly: true });
+
         res.status(200).json({
           message: "Logged in successfully",
-          token: token,
-          email: email,
-          uid: uid,
-          user_type: user_type,
+          email,
+          uid,
+          user_type,
+          isLogin: true,
         });
       }
     });
   } catch (error) {
     console.error("Error running the query : ", error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+const refresh = asyncHand(async (req, res) => {
+  const refreshToken = req.cookies["refreshToken"];
+  const password = req.body.password;
+  const decryptedUID = req.body.decryptedUID;
+
+  console.log("Data for refresh ", req.body, refreshToken);
+  if (!refreshToken || !password) {
+    console.error("Invalid request: Missing refresh token or password");
+    return res
+      .status(400)
+      .json({ message: "Bad Request: Missing refresh token or password" });
+  }
+
+  const user = verifyRefreshToken(refreshToken);
+
+  if (!user) {
+    console.error("Invalid refresh token");
+    return res
+      .status(403)
+      .json({ message: "Forbidden: Invalid refresh token" });
+  }
+
+  console.log("Received Refresh Token and Password");
+
+  try {
+    const query = "SELECT password FROM users WHERE uid = $1";
+    const result = await pool.query(query, [decryptedUID]);
+
+    if (result.rows.length === 0) {
+      console.error("User not found");
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const storedHashedPassword = result.rows[0].password;
+    const passwordMatch = await bcrypt.compare(password, storedHashedPassword);
+
+    if (!passwordMatch) {
+      console.error("Incorrect password");
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: Incorrect password" });
+    }
+
+    const token = jwt.sign(user, secretKey, { expiresIn: "10h" });
+    const newRefreshToken = generateRefreshToken(user.email);
+
+    console.log("New Access Token:", token);
+    console.log("New Refresh Token:", newRefreshToken);
+
+    res.cookie("token", token, { httpOnly: true });
+    res.cookie("refreshToken", newRefreshToken, { httpOnly: true });
+    res.sendStatus(200);
+  } catch (err) {
+    console.error("Error querying database:", err);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
@@ -120,7 +182,15 @@ const signUp = asyncHand(async (req, res) => {
   }
 });
 
+const logout = asyncHand((req, res) => {
+  res.clearCookie("token", { httpOnly: true });
+  res.clearCookie("refreshToken", { httpOnly: true });
+
+  res.status(200).json({ message: "Logout successful" });
+});
+
 module.exports = {
   login,
   signUp,
+  logout,
 };

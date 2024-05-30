@@ -6,8 +6,8 @@ const nodemailer = require("nodemailer");
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "eventlink528@gmail.com",
-    pass: "glkvqsejfhwekvqd",
+    user: process.env.TRANSPORTER_EMAIL,
+    pass: process.env.TRANSPORTER_PASS,
   },
 });
 
@@ -17,7 +17,7 @@ function generateOTP() {
 
 async function sendOTPEmail(email, otp) {
   const mailOptions = {
-    from: "eventlink528@gmail.com",
+    from: process.env.TRANSPORTER_EMAIL,
     to: email,
     subject: "Password Reset OTP",
     text: `Your OTP for resetting the password is: ${otp}`,

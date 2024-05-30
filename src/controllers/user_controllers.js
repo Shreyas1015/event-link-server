@@ -23,56 +23,49 @@ const userProfleID = asyncHand((req, res) => {
 });
 
 const userProfileSetup = asyncHand((req, res) => {
-  if (!req.user || !req.user.email) {
-    console.log("checking..");
-    return res
-      .status(401)
-      .json({ message: "Unauthorized - Missing or invalid token" });
-  } else {
-    const formData = req.body;
-    const uid = formData.uid;
+  const formData = req.body.updatedFormData;
+  const uid = formData.uid;
 
-    const checkQuery = "SELECT * FROM user_profile WHERE uid = ?";
-    connection.query(checkQuery, [uid], (checkErr, checkResult) => {
-      if (checkErr) {
-        console.error("Error Checking Data:", checkErr);
-        res.status(500).json({ error: "Internal Server Error" });
-      } else {
-        if (checkResult && checkResult.length > 0) {
-          const updateQuery = "UPDATE user_profile SET ? WHERE uid = ?";
-          connection.query(
-            updateQuery,
-            [formData, uid],
-            (updateErr, updateResult) => {
-              if (updateErr) {
-                console.error("Error Updating Data:", updateErr);
-                res.status(500).json({ error: "Internal Server Error" });
-              } else {
-                console.log("Data updated successfully");
-                res.status(200).json({ message: "Data Updated Successfully" });
-              }
-            }
-          );
-        } else {
-          const insertQuery = "INSERT INTO user_profile SET ?";
-          connection.query(insertQuery, formData, (insertErr, insertResult) => {
-            if (insertErr) {
-              console.error("Error Inserting Data:", insertErr);
+  const checkQuery = "SELECT * FROM user_profile WHERE uid = ?";
+  connection.query(checkQuery, [uid], (checkErr, checkResult) => {
+    if (checkErr) {
+      console.error("Error Checking Data:", checkErr);
+      res.status(500).json({ error: "Internal Server Error" });
+    } else {
+      if (checkResult && checkResult.length > 0) {
+        const updateQuery = "UPDATE user_profile SET ? WHERE uid = ?";
+        connection.query(
+          updateQuery,
+          [formData, uid],
+          (updateErr, updateResult) => {
+            if (updateErr) {
+              console.error("Error Updating Data:", updateErr);
               res.status(500).json({ error: "Internal Server Error" });
             } else {
-              const UserProfileTD = insertResult.insertId;
-              console.log("Generated user_profile_id:", UserProfileTD);
-              console.log("Data inserted successfully");
-              res.status(200).json({
-                message: "Data Inserted Successfully",
-                user_profile_id: UserProfileTD,
-              });
+              console.log("Data updated successfully");
+              res.status(200).json({ message: "Data Updated Successfully" });
             }
-          });
-        }
+          }
+        );
+      } else {
+        const insertQuery = "INSERT INTO user_profile SET ?";
+        connection.query(insertQuery, formData, (insertErr, insertResult) => {
+          if (insertErr) {
+            console.error("Error Inserting Data:", insertErr);
+            res.status(500).json({ error: "Internal Server Error" });
+          } else {
+            const UserProfileTD = insertResult.insertId;
+            console.log("Generated user_profile_id:", UserProfileTD);
+            console.log("Data inserted successfully");
+            res.status(200).json({
+              message: "Data Inserted Successfully",
+              user_profile_id: UserProfileTD,
+            });
+          }
+        });
       }
-    });
-  }
+    }
+  });
 });
 
 const userData = asyncHand((req, res) => {
@@ -110,8 +103,9 @@ const getAllPosts = asyncHand((req, res) => {
 });
 
 const userFeedBack = asyncHand(async (req, res) => {
-  const formData = req.body;
+  const formData = req.body.updatedFormData;
   const userProfileID = formData.user_profile_id;
+
   const uid = formData.uid;
 
   const insertQuery = `

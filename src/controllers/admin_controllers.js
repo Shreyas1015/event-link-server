@@ -2,12 +2,13 @@ const asyncHand = require("express-async-handler");
 const { connection } = require("../config/dbConfig");
 
 const adminProfileID = asyncHand((req, res) => {
-  const uid = req.query.uid;
+  const uid = req.body.decryptedUID;
 
   const getAdminIdQuery = "SELECT admin_id FROM admin_profile WHERE uid = ?";
   connection.query(getAdminIdQuery, [uid], (err, result) => {
     if (err) {
       console.error("Error fetching admin_id:", err);
+
       res.status(500).json({ error: "Internal Server Error" });
     } else {
       if (result && result.length > 0) {
@@ -21,8 +22,8 @@ const adminProfileID = asyncHand((req, res) => {
 });
 
 const adminProfileSetup = asyncHand((req, res) => {
-  const formData = req.body;
-  const uid = formData.uid;
+  const formData = req.body.updatedFormData;
+  const uid = req.body.decryptedUID;
 
   const checkQuery = "SELECT * FROM admin_profile WHERE uid = ?";
   connection.query(checkQuery, [uid], (checkErr, checkResult) => {
@@ -67,7 +68,9 @@ const adminProfileSetup = asyncHand((req, res) => {
 });
 
 const addPosts = asyncHand(async (req, res) => {
-  const formData = req.body;
+  console.log("Entering into addPosts");
+
+  const formData = req.body.updatedFormData;
   const adminId = formData.admin_id;
   const uid = formData.uid;
 
@@ -84,13 +87,16 @@ const addPosts = asyncHand(async (req, res) => {
       res.status(500).json({ error: "Internal Server Error" });
     } else {
       console.log("Data inserted successfully");
-      res.status(200).json({ message: "Data Inserted Successfully" });
+      res.status(201).json({
+        message: "Data Inserted Successfully",
+        post_id: result.insertId,
+      });
     }
   });
 });
 
 const feedBack = asyncHand(async (req, res) => {
-  const formData = req.body;
+  const formData = req.body.updatedFormData;
   const adminId = formData.admin_id;
   const uid = formData.uid;
 
@@ -123,7 +129,8 @@ const feedBack = asyncHand(async (req, res) => {
   });
 });
 
-const editPosts = asyncHand((req, res) => {
+const getEditPostsData = asyncHand((req, res) => {
+  console.log("Entering into editPosts");
   const postID = req.params.post_id;
 
   const getPostQuery = "SELECT * FROM add_posts WHERE posts_id = ?";
@@ -162,16 +169,39 @@ const particularPosts = asyncHand((req, res) => {
 });
 
 const putPostData = asyncHand((req, res) => {
-  const postID = req.params.post_id;
-  const formData = req.body;
+  console.log("Entering into putPostData");
+  const postID = req.body.postID;
+  const formData = req.body.updatedFormData;
 
-  const updateQuery = "UPDATE add_posts SET ? WHERE posts_id = ?";
-  connection.query(updateQuery, [formData, postID], (err, result) => {
+  console.log("FormData:", formData);
+
+  const updateQuery =
+    "UPDATE add_posts SET cover_img=?, event_name=?, event_desc=?, event_date=?, category_id=?, contact=?, email=?, google_form_link=?, venue=?, uid=?, admin_id=? WHERE posts_id = ?";
+
+  const updateValues = [
+    formData.cover_img,
+    formData.event_name,
+    formData.event_desc,
+    formData.event_date,
+    formData.category_id,
+    formData.contact,
+    formData.email,
+    formData.google_form_link,
+    formData.venue,
+    formData.uid,
+    formData.admin_id,
+    postID,
+  ];
+
+  console.log("Update Query:", updateQuery);
+  console.log("Update Values:", updateValues);
+
+  connection.query(updateQuery, updateValues, (err, result) => {
     if (err) {
       console.error("Error updating post:", err);
       res.status(500).json({ error: "Internal Server Error" });
     } else {
-      console.log("Post updated successfully");
+      console.log("Post updated successfully", result);
       res.status(200).json({ message: "Post Updated Successfully" });
     }
   });
@@ -195,9 +225,10 @@ const getAdminData = asyncHand((req, res) => {
 });
 
 const deletePosts = asyncHand((req, res) => {
-  const postID = req.params.post_id;
+  const postID = req.body.postID;
 
   const deleteQuery = "DELETE FROM add_posts WHERE posts_id = ?";
+
   connection.query(deleteQuery, [postID], (err, result) => {
     if (err) {
       console.error("Error deleting post:", err);
@@ -226,46 +257,33 @@ const getAdminPosts = asyncHand((req, res) => {
 });
 
 const getAdminProfileData = asyncHand((req, res) => {
-  if (!req.user || !req.user.email) {
-    res
-      .status(401)
-      .json({ message: "Unauthorized - Missing or invalid token" });
-    res.sendFile("/client/src/Pages/Authentications/ErrorPage.js");
-  } else {
-    const adminID = parseInt(req.query.admin_id);
-    const authenticatedClientID = req.admin_id;
-    console.log("authenticatedClientID : ", authenticatedClientID);
-    console.log("admin ID : ", adminID);
-    if (authenticatedClientID !== adminID) {
-      return res.status(403).json({ message: "Forbidden - Access denied" });
-    }
-    const getAdminProfileDataQuery = `
-      SELECT college_name, email, contact, address
-      FROM admin_profile
-      WHERE admin_id = ?
-    `;
-
-    connection.query(getAdminProfileDataQuery, [adminID], (err, result) => {
-      if (err) {
-        console.error("Error fetching admin profile data:", err);
-        res.status(500).json({ error: "Internal Server Error" });
+  const adminID = req.body.adminID;
+  console.log("Admin Id from getAdminProfileData", adminID);
+  const getAdminProfileDataQuery = `
+  SELECT college_name, email, contact, address
+  FROM admin_profile
+  WHERE admin_id = ?
+`;
+  connection.query(getAdminProfileDataQuery, [adminID], (err, result) => {
+    if (err) {
+      console.error("Error fetching admin profile data:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    } else {
+      if (result && result.length > 0) {
+        const profileData = result[0];
+        res.status(200).json(profileData);
       } else {
-        if (result && result.length > 0) {
-          const profileData = result[0];
-          res.status(200).json(profileData);
-        } else {
-          res.status(404).json({ error: "Admin profile data not found" });
-        }
+        res.status(404).json({ error: "Admin profile data not found" });
       }
-    });
-  }
+    }
+  });
 });
 
 module.exports = {
   adminProfileID,
   adminProfileSetup,
   addPosts,
-  editPosts,
+  getEditPostsData,
   particularPosts,
   putPostData,
   getAdminData,
