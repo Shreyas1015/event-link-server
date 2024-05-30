@@ -1,6 +1,8 @@
 const express = require("express");
+const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const AdminRoutes = require("./src/routes/AdminRoutes");
+
 const userRoutes = require("./src/routes/userRoutes");
 const authRoutes = require("./src/routes/authRoutes");
 const collegeAdminRoutes = require("./src/routes/collegeAdminRoutes");
