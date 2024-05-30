@@ -3,7 +3,7 @@
 const cors = require("cors");
 
 const corsOptions = cors({
-  origin: "https://event-link.vercel.app",
+  origin: process.env.CORS_ORIGIN,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
 });
