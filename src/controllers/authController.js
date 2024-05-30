@@ -39,8 +39,16 @@ const login = asyncHand((req, res) => {
         console.log("Generated Token:", token);
         console.log("Refresh Token:", refreshToken);
 
-        res.cookie("token", token, { httpOnly: true });
-        res.cookie("refreshToken", refreshToken, { httpOnly: true });
+        res.cookie("token", token, {
+          httpOnly: true,
+          secure: true, // set to true if using https
+          sameSite: "strict",
+        });
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          secure: true, // set to true if using https
+          sameSite: "strict", // adjust according to your requirement
+        });
 
         res.status(200).json({
           message: "Logged in successfully",
