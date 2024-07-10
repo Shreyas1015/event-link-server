@@ -40,8 +40,8 @@ const login = asyncHand((req, res) => {
         const token = jwt.sign({ email }, secretKey, { expiresIn: "10h" });
         const refreshToken = generateRefreshToken(email);
 
-        console.log("Generated Token:", token); // Log the generated token
-        console.log("Refresh Token:", refreshToken); // Log the refresh token
+        console.log("Generated Token:", token); 
+        console.log("Refresh Token:", refreshToken); 
 
         res.cookie("token", token, {
           httpOnly: true,
@@ -54,7 +54,7 @@ const login = asyncHand((req, res) => {
           sameSite: "None",
         });
 
-        console.log("Cookies set for:", email); // Confirm cookies are set
+        console.log("Cookies set for:", email); 
 
         res.status(200).json({
           message: "Logged in successfully",

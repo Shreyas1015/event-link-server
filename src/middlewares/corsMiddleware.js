@@ -7,7 +7,7 @@ const corsOptions = {
       callback(null, true); // Allow the request if the origin is in the allowed list or not present (server-to-server requests)
     } else {
       console.error("Blocked by CORS policy:", origin);
-      callback(new Error("Not allowed by CORS"), false); // Block the request if the origin is not allowed
+      callback(new Error("Not allowed by CORS"), false); // Block the request if the origin is not allowedd
     }
   },
   credentials: true, // Allow credentials like cookies, authorization headers, etc.
