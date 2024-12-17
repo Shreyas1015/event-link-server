@@ -387,39 +387,58 @@ const deleteClient = asyncHand(async (req, res) => {
 });
 
 const addClient = asyncHand((req, res) => {
-  const formData = req.body;
+  const formData = req.body.formData;
 
   try {
+    // Validate formData
+    if (
+      !formData.email ||
+      !formData.password ||
+      !formData.confirmPassword ||
+      !formData.user_type
+    ) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      return res.status(400).json({ error: "Passwords do not match" });
+    }
+
     const searchQuery = "SELECT * FROM users WHERE email = ?";
     connection.query(searchQuery, [formData.email], async (err, result) => {
       if (err) {
         console.error("Error running the query: ", err);
-        res.status(500).json({ error: "Internal Server Error" });
-        return;
+        return res.status(500).json({ error: "Internal Server Error" });
       }
 
+      // Check if user already exists
       if (result.length > 0) {
         return res.status(400).json({ error: "User already exists" });
       }
 
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(formData.password, saltRounds);
+      try {
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(formData.password, saltRounds);
 
-      const insertQuery =
-        "INSERT INTO users (email, password , user_type) VALUES (?, ?, ?)";
-      connection.query(
-        insertQuery,
-        [formData.email, hashedPassword, formData.user_type],
-        (err, result) => {
-          if (err) {
-            console.error("Error Inserting data: ", err);
-            res.status(500).json({ error: "Internal Server Error" });
-          } else {
+        const insertQuery =
+          "INSERT INTO users (email, password, user_type) VALUES (?, ?, ?)";
+        connection.query(
+          insertQuery,
+          [formData.email, hashedPassword, formData.user_type],
+          (err, result) => {
+            if (err) {
+              console.error("Error inserting data: ", err);
+              return res.status(500).json({ error: "Internal Server Error" });
+            }
+
             console.log("Client Registered Successfully");
             res.status(200).json({ message: "Client Registered Successfully" });
           }
-        }
-      );
+        );
+      } catch (hashError) {
+        console.error("Error hashing password:", hashError);
+        res.status(500).json({ error: "Failed to process password" });
+      }
     });
   } catch (error) {
     console.error("Error inserting data: ", error);

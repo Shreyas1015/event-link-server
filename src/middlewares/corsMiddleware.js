@@ -1,4 +1,5 @@
 const allowedOrigins = ["https://event-link.vercel.app"];
+// const allowedOrigins = ["http://localhost:3000"];
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -11,7 +12,7 @@ const corsOptions = {
     }
   },
   credentials: true, // Allow credentials like cookies, authorization headers, etc.
-  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
+  optionsSuccessStatus: 200, // Some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
 module.exports = corsOptions;
